@@ -13,14 +13,17 @@ Globals:
 Parameters:
   SourceBucketName:
     Type: String
-    Default: "zipkero-helloworld-bucket"
+    Default: "zipkero-img-resize-src"
+#  DestinationBucketName:
+#    Type: String
+#    Default: "zipkero-img-resize-dest"
 
 Resources:
-  HelloWorldFunction:
+  ImageResizeFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: hello-world/
-      Handler: hello-world
+      CodeUri: image-resize/
+      Handler: image-resize
       Runtime: go1.x
       Architectures:
         - x86_64
@@ -30,25 +33,30 @@ Resources:
         - AWSLambdaBasicExecutionRole
         - CloudWatchLogsFullAccess
       Events:
-        HelloWorldS3UploadEvent:
+        ImageResizeS3UploadEvent:
           Type: S3
           Properties:
-            Bucket: !Ref HelloWorldS3Bucket
+            Bucket: !Ref ImageUploadSrcBucket
             Events: s3:ObjectCreated:*
 
   LambdaInvokePermission:
     Type: 'AWS::Lambda::Permission'
     Properties:
-      FunctionName: !GetAtt HelloWorldFunction.Arn
+      FunctionName: !GetAtt ImageResizeFunction.Arn
       Action: 'lambda:InvokeFunction'
       Principal: 's3.amazonaws.com'
       SourceAccount: !Sub ${AWS::AccountId}
-      SourceArn: !GetAtt HelloWorldS3Bucket.Arn
+      SourceArn: !GetAtt ImageUploadSrcBucket.Arn
 
-  HelloWorldS3Bucket:
+  ImageUploadSrcBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Ref SourceBucketName
+
+#  ImageUploadDestBucket:
+#    Type: AWS::S3::Bucket
+#    Properties:
+#      BucketName: !Ref SourceBucketName
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
@@ -65,9 +73,12 @@ Resources:
       AutoConfigurationEnabled: 'true'
 
 Outputs:
-  HelloWorldS3Bucket:
+  ImageUploadSrcBucket:
     Description: s3 lambda trigger
-    Value: !Ref HelloWorldS3Bucket
-  HelloWorldFunction:
+    Value: !Ref ImageUploadSrcBucket
+#  ImageUploadDestBucket:
+#    Description: s3 lambda trigger
+#    Value: !Ref ImageUploadDestBucket
+  ImageResizeFunction:
     Description: First Lambda Function ARN
-    Value: !GetAtt HelloWorldFunction.Arn
+    Value: !GetAtt ImageResizeFunction.Arn
