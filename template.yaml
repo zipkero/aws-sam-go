@@ -10,12 +10,12 @@ Globals:
     Timeout: 5
     MemorySize: 128
 
-Resources:
-  HelloWorldS3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: zipkero-helloworld-bucket
+Parameters:
+  SourceBucketName:
+    Type: String
+    Default: "zipkero-helloworld-bucket"
 
+Resources:
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -25,8 +25,9 @@ Resources:
       Architectures:
         - x86_64
       Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref SourceBucketName
         - AWSLambdaBasicExecutionRole
-        - AmazonS3FullAccess
         - CloudWatchLogsFullAccess
       Events:
         HelloWorldS3UploadEvent:
@@ -34,9 +35,20 @@ Resources:
           Properties:
             Bucket: !Ref HelloWorldS3Bucket
             Events: s3:ObjectCreated:*
-      Environment:
-        Variables:
-          PARAM1: VALUE
+
+  LambdaInvokePermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt HelloWorldFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: 's3.amazonaws.com'
+      SourceAccount: !Sub ${AWS::AccountId}
+      SourceArn: !GetAtt HelloWorldS3Bucket.Arn
+
+  HelloWorldS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref SourceBucketName
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
