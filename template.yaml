@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  aws-sam-go
+
+  Sample SAM Template for aws-sam-go
+
+Globals:
+  Function:
+    Timeout: 5
+    MemorySize: 128
+
+Resources:
+  HelloWorldS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: zipkero-helloworld-bucket
+
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello-world/
+      Handler: hello-world
+      Runtime: go1.x
+      Architectures:
+        - x86_64
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AmazonS3FullAccess
+        - CloudWatchLogsFullAccess
+      Events:
+        HelloWorldS3UploadEvent:
+          Type: S3
+          Properties:
+            Bucket: !Ref HelloWorldS3Bucket
+            Events: s3:ObjectCreated:*
+      Environment:
+        Variables:
+          PARAM1: VALUE
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name: !Sub ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: 'true'
+
+Outputs:
+  HelloWorldS3Bucket:
+    Description: s3 lambda trigger
+    Value: !Ref HelloWorldS3Bucket
+  HelloWorldFunction:
+    Description: First Lambda Function ARN
+    Value: !GetAtt HelloWorldFunction.Arn
